@@ -2,6 +2,7 @@ from datetime import datetime
 
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import generate_password_hash
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://root:1234567@localhost:3306/movie"
@@ -20,7 +21,7 @@ class User(db.Model):
     phone = db.Column(db.String(100), unique=True)
     info = db.Column(db.Text)
     face = db.Column(db.String(255), unique=True)
-    addtime = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    addtime = db.Column(db.DateTime, index=True, default=datetime.now)
     uuid = db.Column(db.String(255), unique=True)
     userlogs = db.relationship('Userlog', backref='user')  # 外键关系关联
     comments = db.relationship('Comment', backref='user')
@@ -36,7 +37,7 @@ class Userlog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     ip = db.Column(db.String(100))
-    addtime = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    addtime = db.Column(db.DateTime, index=True, default=datetime.now)
 
     def __repr__(self):
         return "<Userlog %r>" % self.id
@@ -47,7 +48,7 @@ class Tag(db.Model):
     __tablename__ = "tag"
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True)
-    addtime = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    addtime = db.Column(db.DateTime, index=True, default=datetime.now)
     movies = db.relationship('Movie', backref="tag")  # 电影外键关系关联
 
     def __repr__(self):
@@ -69,7 +70,7 @@ class Movie(db.Model):
     area = db.Column(db.String(255))
     release_time = db.Column(db.Date)
     length = db.Column(db.String(100))
-    addtime = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    addtime = db.Column(db.DateTime, index=True, default=datetime.now)
     comments = db.relationship('Comment', backref='movie')
     moviecols = db.relationship('Moviecol', backref='movie')
 
@@ -83,7 +84,7 @@ class Preview(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(255), unique=True)
     logo = db.Column(db.String(255), unique=True)
-    addtime = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    addtime = db.Column(db.DateTime, index=True, default=datetime.now)
 
     def __repr__(self):
         return "<Preview %r>" % self.title
@@ -96,7 +97,7 @@ class Comment(db.Model):
     content = db.Column(db.Text)
     movie_id = db.Column(db.Integer, db.ForeignKey('movie.id'))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    addtime = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    addtime = db.Column(db.DateTime, index=True, default=datetime.now)
 
     def __repr__(self):
         return "<Comment %r>" % self.id
@@ -108,7 +109,7 @@ class Moviecol(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     movie_id = db.Column(db.Integer, db.ForeignKey('movie.id'))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    addtime = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    addtime = db.Column(db.DateTime, index=True, default=datetime.now)
 
     def __repr__(self):
         return "<Moviecol %r>" % self.id
@@ -120,7 +121,7 @@ class Auth(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), unique=True)
     url = db.Column(db.String(255), unique=True)
-    addtime = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    addtime = db.Column(db.DateTime, index=True, default=datetime.now)
 
     def __repr__(self):
         return "<Auth %r>" % self.name
@@ -132,7 +133,7 @@ class Role(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), unique=True)
     auths = db.Column(db.String(600))
-    addtime = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    addtime = db.Column(db.DateTime, index=True, default=datetime.now)
 
     def __repr__(self):
         return "<Role %r>" % self.name
@@ -146,7 +147,7 @@ class Admin(db.Model):
     pwd = db.Column(db.String(100))
     is_super = db.Column(db.SmallInteger)  # 0为超级管理员
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'))
-    addtime = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    addtime = db.Column(db.DateTime, index=True, default=datetime.now)
     adminlogs = db.relationship('Adminlog', backref='admin')  # 管理员登录日志外键
     oplogs = db.relationship('Oplog', backref='admin')
 
@@ -160,7 +161,7 @@ class Adminlog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     admin_id = db.Column(db.Integer, db.ForeignKey('admin.id'))
     ip = db.Column(db.String(100))
-    addtime = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    addtime = db.Column(db.DateTime, index=True, default=datetime.now)
 
     def __repr__(self):
         return "<Adminlog %r>" % self.id
@@ -172,7 +173,7 @@ class Oplog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     admin_id = db.Column(db.Integer, db.ForeignKey('admin.id'))
     ip = db.Column(db.String(100))
-    addtime = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    addtime = db.Column(db.DateTime, index=True, default=datetime.now)
     reason = db.Column(db.String(600))
 
     def __repr__(self):
@@ -180,4 +181,17 @@ class Oplog(db.Model):
 
 
 if __name__ == '__main__':
-    db.create_all()
+    # db.create_all()
+    # role = Role(
+    #     name="超级管理员",
+    #     auths=""
+    # )
+    admin = Admin(
+        name='ztyzty222',
+        pwd=generate_password_hash('ztyzty'),
+        is_super=0,
+        role_id=1
+    )
+
+    db.session.add(admin)
+    db.session.commit()
