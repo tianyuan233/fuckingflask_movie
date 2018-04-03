@@ -3,7 +3,7 @@ from functools import wraps
 from flask import render_template, redirect, url_for, flash, session, request
 
 from app import db
-from app.admin.forms import LoginForm, TagForm
+from app.admin.forms import LoginForm, TagForm, MovieForm
 from app.models import Admin, Tag
 from . import admin
 
@@ -110,10 +110,13 @@ def tag_edit(id):
     return render_template("admin/tag_edit.html", form=form,tag=tag)
 
 
-@admin.route("/movie/add/")
+@admin.route("/movie/add/",methods=['GET', 'POST'])
 @admin_login_req
 def movie_add():
-    return render_template("admin/movie_add.html")
+    form = MovieForm()
+    if form.validate_on_submit():
+        data = form.data
+    return render_template("admin/movie_add.html",form=form)
 
 
 @admin.route("/movie/list/")
