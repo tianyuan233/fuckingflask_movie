@@ -82,7 +82,7 @@ class MovieForm(FlaskForm):
         description="标签",
         render_kw={
             "class": "form-control",
-            "placeholder": "请输入标签",
+            "placeholder": "请输入电影名",
             "id": "input_title"
             # "required": "required"
         }
@@ -105,7 +105,7 @@ class MovieForm(FlaskForm):
         render_kw={
             "class": "form-control",
             "rows": 10,
-            "placeholder": "请输入地区"
+            "placeholder": "请输入简介"
         }
     )
 
