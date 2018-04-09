@@ -7,8 +7,8 @@ from flask import render_template, redirect, url_for, flash, session, request
 from werkzeug.utils import secure_filename
 
 from app import db, app
-from app.admin.forms import LoginForm, TagForm, MovieForm
-from app.models import Admin, Tag, Movie
+from app.admin.forms import LoginForm, TagForm, MovieForm, PreviewForm
+from app.models import Admin, Tag, Movie, Preview
 from . import admin
 
 
@@ -133,7 +133,7 @@ def movie_add():
     if form.validate_on_submit():
         data = form.data
         movie_count = Movie.query.filter_by(title=data["title"]).count()
-        if movie_count == 1 :
+        if movie_count == 1:
             flash("片名已存在", "error")
             return redirect(url_for('admin.movie_add'))
         file_url = secure_filename(form.url.data.filename)
@@ -231,21 +231,86 @@ def movie_edit(id):
 
         db.session.add(movie)
         db.session.commit()
-        flash("修改电影成功","ok")
+        flash("修改电影成功", "ok")
         return redirect(url_for("admin.movie_edit", id=movie.id))
     return render_template("admin/movie_edit.html", form=form, movie=movie)
 
 
-@admin.route("/preview/add/")
+# 预告添加
+@admin.route("/preview/add/", methods=['GET', 'POST'])
 @admin_login_req
 def preview_add():
-    return render_template("admin/preview_add.html")
+    form = PreviewForm()
+    if form.validate_on_submit():
+        data = form.data
+        file_logo = secure_filename(form.logo.data.filename)
+        if not os.path.exists(app.config["UP_DIR"]):
+            os.makedirs(app.config["UP_DIR"])
+        logo = change_file(file_logo)
+        form.logo.data.save(app.config["UP_DIR"] + logo)
+        preview = Preview(
+            logo=logo,
+            title=data["title"]
+        )
+        db.session.add(preview)
+        db.session.commit()
+        flash("修改电影成功", "ok")
+        return redirect(url_for("admin.preview_add"))
+
+    return render_template("admin/preview_add.html", form=form)
 
 
-@admin.route("/preview/list/")
+@admin.route("/preview/list/<int:page>/", methods=['GET'])
 @admin_login_req
-def preview_list():
-    return render_template("admin/preview_list.html")
+def preview_list(page):
+    if page is None:
+        page = 1
+    page_data = Preview.query.order_by(
+        Preview.addtime.desc()
+    ).paginate(page=page, per_page=10)
+
+    return render_template("admin/preview_list.html", page_data=page_data)
+
+
+# 预告删除
+@admin.route("/preview/del/<int:id>/", methods=["GET"])
+@admin_login_req
+def preview_del(id=None):
+    preview = Preview.query.filter_by(id=id).first_or_404()
+    db.session.delete(preview)
+    db.session.commit()
+    flash("已成功删除预告", "ok")
+    return redirect(url_for("admin.preview_list", page=1))
+
+
+# 预告编辑
+@admin.route("/preview/edit/<int:id>/", methods=['GET', 'POST'])
+@admin_login_req
+def preview_edit(id=None):
+    form = PreviewForm()
+    form.logo.validators = []
+    preview = Preview.query.get_or_404(int(id))
+    if request.method == "GET":
+        form.title.data = preview.title
+    if form.validate_on_submit():
+        data = form.data
+        preview_count = Preview.query.filter_by(title=data["title"]).count()
+        if preview_count == 1 and preview.title != data["title"]:
+            flash("预告已存在", "error")
+            return redirect(url_for('admin.preview_edit', id=id))
+        if not os.path.exists(app.config["UP_DIR"]):
+            os.makedirs(app.config["UP_DIR"])
+        if form.logo.data != "":
+            file_logo = secure_filename(form.logo.data.filename)
+            preview.logo = change_file(file_logo)
+            form.logo.data.save(app.config["UP_DIR"] + preview.logo)
+        preview.title = data["title"]
+
+        db.session.add(preview)
+        db.session.commit()
+        flash("修改预告成功", "ok")
+        return redirect(url_for("admin.preview_edit", id=preview.id))
+    return render_template("admin/preview_edit.html", form=form, preview=preview)
 
 
 @admin.route("/user/list/")
