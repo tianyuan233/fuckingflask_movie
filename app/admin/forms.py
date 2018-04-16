@@ -115,3 +115,32 @@ class PreviewForm(FlaskForm):
     title = StringField(label="预告标题",validators=[DataRequired("请输入预告片名")],description="预告片名",render_kw={"class": "form-control", "placeholder": "请输入预告片名", "id": "input_title"})
     logo = FileField(label="预告封面",validators=[DataRequired("请上传预告封面")],description="预告封面")
     submit = SubmitField('编辑/添加', render_kw={"class": "btn btn-primary"})
+
+
+class PwdForm(FlaskForm):
+    old_pwd = PasswordField(
+        label="旧密码",
+        validators=[DataRequired("请输入旧密码")],
+        description="密码",
+        render_kw={"class": "form-control", "placeholder": "请输入旧密码！", }
+    )
+
+    new_pwd = PasswordField(
+        label="新密码",
+        validators=[DataRequired("请输入新密码")],
+        description="密码",
+        render_kw={"class": "form-control", "placeholder": "请输入新密码！", }
+    )
+
+    submit = SubmitField('确认', render_kw={"class": "btn btn-primary"})
+
+    def validate_old_pwd(self, field):
+        from flask import session
+        pwd = field.data
+        name = session["admin"]
+        print(name)
+        admin = Admin.query.filter_by(
+            name=name
+        ).first()
+        if not admin.check_pwd(pwd):
+            raise ValidationError("密码不正确")

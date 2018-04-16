@@ -7,7 +7,7 @@ from flask import render_template, redirect, url_for, flash, session, request
 from werkzeug.utils import secure_filename
 
 from app import db, app
-from app.admin.forms import LoginForm, TagForm, MovieForm, PreviewForm
+from app.admin.forms import LoginForm, TagForm, MovieForm, PreviewForm, PwdForm
 from app.models import Admin, Tag, Movie, Preview, User, Comment, Moviecol
 from . import admin
 
@@ -57,10 +57,21 @@ def logout():
     return redirect(url_for("admin.login"))
 
 
-@admin.route("/pwd/")
+# 修改密码
+@admin.route("/pwd/", methods=['GET', 'POST'])
 @admin_login_req
 def pwd():
-    return render_template("admin/pwd.html")
+    form = PwdForm()
+    if form.validate_on_submit():
+        data = form.data
+        admin = Admin.query.filter_by(name=session["admin"]).first()
+        from werkzeug.security import generate_password_hash
+        admin.pwd = generate_password_hash(data["new_pwd"])
+        db.session.add(admin)
+        db.session.commit()
+        flash("已成功修改密码", "ok")
+        return redirect(url_for("admin.pwd"))
+    return render_template("admin/pwd.html", form=form)
 
 
 @admin.route("/tag/add/", methods=['GET', 'POST'])
