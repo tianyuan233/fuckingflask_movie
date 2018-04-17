@@ -8,8 +8,17 @@ from werkzeug.utils import secure_filename
 
 from app import db, app
 from app.admin.forms import LoginForm, TagForm, MovieForm, PreviewForm, PwdForm
-from app.models import Admin, Tag, Movie, Preview, User, Comment, Moviecol
+from app.models import Admin, Tag, Movie, Preview, User, Comment, Moviecol, Oplog, Userlog, Adminlog
 from . import admin
+
+
+# 上下文处理器
+@admin.context_processor
+def tpl_extra():
+    data = dict(
+        online_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    )
+    return data
 
 
 # 登录验证
@@ -46,6 +55,13 @@ def login():
             flash("密码错误")
             return redirect(url_for("admin.login"))
         session["admin"] = data["account"]
+        session["admin_id"] = admin.id
+        adminlog = Adminlog(
+            admin_id=admin.id,
+            ip=request.remote_addr,
+        )
+        db.session.add(adminlog)
+        db.session.commit()
         return redirect(request.args.get("next") or url_for("admin.index"))
     return render_template("admin/login.html", form=form)
 
@@ -53,7 +69,8 @@ def login():
 @admin.route("/logout/")
 @admin_login_req
 def logout():
-    session.pop("account", None)
+    session.pop("admin", None)
+    session.pop("admin_id", None)
     return redirect(url_for("admin.login"))
 
 
@@ -89,6 +106,13 @@ def tag_add():
         )
         db.session.add(tag)
         db.session.commit()
+        oplog = Oplog(
+            admin_id=session["admin_id"],
+            ip=request.remote_addr,
+            reason="添加标签 %s" % data["name"]
+        )
+        db.session.add(oplog)
+        db.session.commit()
         flash("已成功添加标签", "ok")
         return redirect(url_for("admin.tag_add"))
     return render_template("admin/tag_add.html", form=form)
@@ -113,6 +137,13 @@ def tag_del(id=None):
     tag = Tag.query.filter_by(id=id).first_or_404()
     db.session.delete(tag)
     db.session.commit()
+    oplog = Oplog(
+        admin_id=session["admin_id"],
+        ip=request.remote_addr,
+        reason="删除标签 %s" % tag.name
+    )
+    db.session.add(oplog)
+    db.session.commit()
     flash("已成功删除标签", "ok")
     return redirect(url_for("admin.tag_list", page=1))
 
@@ -131,6 +162,13 @@ def tag_edit(id):
             return redirect(url_for("admin.tag_edit", id=id))
         tag.name = data["name"]
         db.session.add(tag)
+        db.session.commit()
+        oplog = Oplog(
+            admin_id=session["admin_id"],
+            ip=request.remote_addr,
+            reason="标签[%s]修改为[%s]" % (tag.name, data["name"])
+        )
+        db.session.add(oplog)
         db.session.commit()
         flash("已成功修改标签", "ok")
         return redirect(url_for("admin.tag_edit", id=id))
@@ -412,22 +450,50 @@ def moviecol_del(id=None):
     return redirect(url_for("admin.moviecol_list", page=1))
 
 
-@admin.route("/oplog/list/")
+@admin.route("/oplog/list/<int:page>", methods=['GET'])
 @admin_login_req
-def oplog_list():
-    return render_template("admin/oplog_list.html")
+def oplog_list(page):
+    if page == None:
+        page = 1
+    page_data = Oplog.query.join(
+        Admin
+    ).filter(
+        Admin.id == Oplog.admin_id
+    ).order_by(
+        Oplog.addtime.desc()
+    ).paginate(page=page, per_page=2)
+
+    return render_template("admin/oplog_list.html", page_data=page_data)
 
 
-@admin.route("/adminloginlog/list/")
+@admin.route("/adminloginlog/list/<int:page>", methods=['GET'])
 @admin_login_req
-def adminloginlog_list():
-    return render_template("admin/adminloginlog_list.html")
+def adminloginlog_list(page):
+    if page == None:
+        page = 1
+    page_data = Adminlog.query.join(
+        Admin
+    ).filter(
+        Admin.id == Adminlog.admin_id
+    ).order_by(
+        Adminlog.addtime.desc()
+    ).paginate(page=page, per_page=2)
+    return render_template("admin/adminloginlog_list.html", page_data=page_data)
 
 
-@admin.route("/userloginlog/list/")
+@admin.route("/userloginlog/list/<int:page>", methods=['GET'])
 @admin_login_req
-def userloginlog_list():
-    return render_template("admin/userloginlog_list.html")
+def userloginlog_list(page):
+    if page == None:
+        page = 1
+    page_data = Userlog.query.join(
+        User
+    ).filter(
+        User.id == Userlog.user_id
+    ).order_by(
+        Userlog.addtime.desc()
+    ).paginate(page=page, per_page=2)
+    return render_template("admin/userloginlog_list.html", page_data=page_data)
 
 
 @admin.route("/role/add/")
