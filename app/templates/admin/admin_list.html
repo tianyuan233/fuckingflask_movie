@@ -37,20 +37,15 @@
                                 <th>管理员角色</th>
                                 <th>添加时间</th>
                             </tr>
+                            {% for v in page_data.items %}
                             <tr>
-                                <td>1</td>
-                                <td>jinlong</td>
-                                <td>普通管理员</td>
-                                <td>系统管理员</td>
-                                <td>2017-06-01</td>
+                                <td>{{ v.id }}</td>
+                                <td>{{ v.name }}</td>
+                                <td>{{ v.is_super }}</td>
+                                <td>{{ v.role_id }}</td>
+                                <td>{{ v.addtime }}</td>
                             </tr>
-                            <tr>
-                                <td>2</td>
-                                <td>jianbo</td>
-                                <td>超级管理员</td>
-                                <td>系统管理员</td>
-                                <td>2017-06-01</td>
-                            </tr>
+                            {% endfor %}
                             </tbody>
                         </table>
                     </div>

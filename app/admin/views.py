@@ -4,11 +4,12 @@ import uuid
 from functools import wraps
 
 from flask import render_template, redirect, url_for, flash, session, request
+from werkzeug.security import generate_password_hash
 from werkzeug.utils import secure_filename
 
 from app import db, app
-from app.admin.forms import LoginForm, TagForm, MovieForm, PreviewForm, PwdForm
-from app.models import Admin, Tag, Movie, Preview, User, Comment, Moviecol, Oplog, Userlog, Adminlog
+from app.admin.forms import LoginForm, TagForm, MovieForm, PreviewForm, PwdForm, AdminForm
+from app.models import Admin, Tag, Movie, Preview, User, Comment, Moviecol, Oplog, Userlog, Adminlog, Role
 from . import admin
 
 
@@ -450,6 +451,7 @@ def moviecol_del(id=None):
     return redirect(url_for("admin.moviecol_list", page=1))
 
 
+# 操作日志
 @admin.route("/oplog/list/<int:page>", methods=['GET'])
 @admin_login_req
 def oplog_list(page):
@@ -466,6 +468,7 @@ def oplog_list(page):
     return render_template("admin/oplog_list.html", page_data=page_data)
 
 
+# 管理员登陆日志
 @admin.route("/adminloginlog/list/<int:page>", methods=['GET'])
 @admin_login_req
 def adminloginlog_list(page):
@@ -481,6 +484,7 @@ def adminloginlog_list(page):
     return render_template("admin/adminloginlog_list.html", page_data=page_data)
 
 
+# 用户登陆日志
 @admin.route("/userloginlog/list/<int:page>", methods=['GET'])
 @admin_login_req
 def userloginlog_list(page):
@@ -496,6 +500,7 @@ def userloginlog_list(page):
     return render_template("admin/userloginlog_list.html", page_data=page_data)
 
 
+# 角色添加
 @admin.route("/role/add/")
 @admin_login_req
 def role_add():
@@ -520,13 +525,33 @@ def auth_list():
     return render_template("admin/auth_list.html")
 
 
-@admin.route("/admin/add/")
+@admin.route("/admin/add/", methods=['GET', 'POST'])
 @admin_login_req
 def admin_add():
-    return render_template("admin/admin_add.html")
+    form = AdminForm()
+    if form.validate_on_submit():
+        data = form.data
+        admin = Admin(
+            name=data['name'],
+            pwd=generate_password_hash(data['pwd']),
+            role_id=int(data['role_id'])
+        )
+        db.session.add(admin)
+        db.session.commit()
+        flash("添加管理员成功", "ok")
+        return redirect(url_for("admin.admin_add"))
+    return render_template("admin/admin_add.html", form=form)
 
 
-@admin.route("/admin/list/")
+@admin.route("/admin/list/<int:page>", methods=["GET"])
 @admin_login_req
-def admin_list():
-    return render_template("admin/admin_list.html")
+def admin_list(page):
+    if page == None:
+        page = 1
+    page_data = Admin.query.join(Role).filter(
+        Role.id == Admin.role_id
+    ).order_by(
+        Admin.addtime.desc()
+    ).paginate(page=page, per_page=5)
+
+    return render_template("admin/admin_list.html", page_data=page_data)
