@@ -4,9 +4,6 @@ from wtforms.validators import DataRequired, ValidationError
 
 from app.models import Admin, Tag
 
-tags = Tag.query.all()
-
-
 class LoginForm(FlaskForm):
     """管理员登录表单"""
     account = StringField(
@@ -87,9 +84,10 @@ class MovieForm(FlaskForm):
         validators=[DataRequired("请选择标签")],
         description="标签",
         coerce=int,
-        choices=[(v.id, v.name) for v in tags],
+        # choices=[(v.id, v.name) for v in tags],
         render_kw={"class": "form-control"}
     )
+
 
     area = StringField(
         label="地区",
@@ -110,6 +108,10 @@ class MovieForm(FlaskForm):
         render_kw={"class": "form-control","placeholder": "上映时间","id": "input_release_time"})
 
     submit = SubmitField('编辑/添加',render_kw={"class": "btn btn-primary"})
+
+    def __init__(self,*args,**kwargs):
+        super(MovieForm,self).__init__(*args,**kwargs)
+        self.tag_id.choices = [(v.id, v.name) for v in Tag.query.all()]
 
 class PreviewForm(FlaskForm):
     title = StringField(label="预告标题",validators=[DataRequired("请输入预告片名")],description="预告片名",render_kw={"class": "form-control", "placeholder": "请输入预告片名", "id": "input_title"})
