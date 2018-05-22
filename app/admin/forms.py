@@ -149,8 +149,28 @@ class PwdForm(FlaskForm):
             raise ValidationError("密码不正确")
 
 
+class AuthForm(FlaskForm):
+    name = StringField(
+        label="权限名称",
+        validators=[DataRequired("请输入权限名称")],
+        description="权限名称",
+        render_kw={"class": "form-control", "placeholder": "请输入权限名称！", }
+    )
+    url = StringField(
+        label="权限地址",
+        validators=[DataRequired("请输入权限地址")],
+        description="权限地址",
+        render_kw={"class": "form-control", "placeholder": "请输入权限地址!", }
+    )
+
+    submit = SubmitField(
+        '添加',
+        render_kw={"class": "btn btn-primary btn-block btn-flat"}
+    )
+
+
 class AdminForm(FlaskForm):
-    """添加管理员表单"""
+    """管理员表单"""
     name = StringField(
         label="账号",
         validators=[DataRequired("请输入账号")],
@@ -172,17 +192,17 @@ class AdminForm(FlaskForm):
         render_kw={"class": "form-control", "placeholder": "请再次输入密码！", }
     )
 
-    submit = SubmitField(
-        '添加',
-        render_kw={"class": "btn btn-primary btn-block btn-flat"}
-    )
-
     role_id = SelectField(
         label="角色",
         # validators=[DataRequired("请选择标签")],
         # description="标签",
         coerce=int,
         render_kw={"class": "form-control"}
+    )
+
+    submit = SubmitField(
+        '添加',
+        render_kw={"class": "btn btn-primary btn-block btn-flat"}
     )
 
     def __init__(self, *args, **kwargs):
