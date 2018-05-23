@@ -210,6 +210,13 @@ def movie_add():
         )
         db.session.add(movie)
         db.session.commit()
+        oplog = Oplog(
+            admin_id=session["admin_id"],
+            ip=request.remote_addr,
+            reason="添加电影 [%s]" % data["title"]
+        )
+        db.session.add(oplog)
+        db.session.commit()
         flash("添加电影成功", "ok")
         return redirect(url_for('admin.movie_add'))
     return render_template("admin/movie_add.html", form=form)
@@ -237,6 +244,13 @@ def movie_del(id=None):
     db.session.delete(movie)
     db.session.commit()
     flash("已成功删除电影", "ok")
+    oplog = Oplog(
+        admin_id=session["admin_id"],
+        ip=request.remote_addr,
+        reason="删除电影 %s" % movie.title
+    )
+    db.session.add(oplog)
+    db.session.commit()
     return redirect(url_for("admin.movie_list", page=1))
 
 
@@ -281,6 +295,13 @@ def movie_edit(id):
 
         db.session.add(movie)
         db.session.commit()
+        oplog = Oplog(
+            admin_id=session["admin_id"],
+            ip=request.remote_addr,
+            reason="修改电影信息 [%s]" % data["title"]
+        )
+        db.session.add(oplog)
+        db.session.commit()
         flash("修改电影成功", "ok")
         return redirect(url_for("admin.movie_edit", id=movie.id))
     return render_template("admin/movie_edit.html", form=form, movie=movie)
@@ -304,7 +325,14 @@ def preview_add():
         )
         db.session.add(preview)
         db.session.commit()
-        flash("修改电影成功", "ok")
+        oplog = Oplog(
+            admin_id=session["admin_id"],
+            ip=request.remote_addr,
+            reason="添加电影预告 [%s]" % data["title"]
+        )
+        db.session.add(oplog)
+        db.session.commit()
+        flash("电影预告添加成功", "ok")
         return redirect(url_for("admin.preview_add"))
 
     return render_template("admin/preview_add.html", form=form)
@@ -328,6 +356,13 @@ def preview_list(page):
 def preview_del(id=None):
     preview = Preview.query.filter_by(id=id).first_or_404()
     db.session.delete(preview)
+    db.session.commit()
+    oplog = Oplog(
+        admin_id=session["admin_id"],
+        ip=request.remote_addr,
+        reason="删除电影预告 %s" % preview.title
+    )
+    db.session.add(oplog)
     db.session.commit()
     flash("已成功删除预告", "ok")
     return redirect(url_for("admin.preview_list", page=1))
@@ -357,6 +392,13 @@ def preview_edit(id=None):
         preview.title = data["title"]
 
         db.session.add(preview)
+        db.session.commit()
+        oplog = Oplog(
+            admin_id=session["admin_id"],
+            ip=request.remote_addr,
+            reason="修改了电影预告 %s" % data["title"]
+        )
+        db.session.add(oplog)
         db.session.commit()
         flash("修改预告成功", "ok")
         return redirect(url_for("admin.preview_edit", id=preview.id))
@@ -464,7 +506,6 @@ def oplog_list(page):
     ).order_by(
         Oplog.addtime.desc()
     ).paginate(page=page, per_page=2)
-
     return render_template("admin/oplog_list.html", page_data=page_data)
 
 
@@ -511,7 +552,9 @@ def role_add():
 @admin_login_req
 def role_list():
     return render_template("admin/role_list.html")
-#权限添加
+
+
+# 权限添加
 @admin.route("/auth/add/", methods=['GET', 'POST'])
 @admin_login_req
 def auth_add():
@@ -526,13 +569,19 @@ def auth_add():
         db.session.commit()
         flash("添加权限成功", "ok")
         return redirect(url_for("admin.auth_add"))
-    return render_template("admin/auth_add.html",form=form)
+    return render_template("admin/auth_add.html", form=form)
 
 
-@admin.route("/auth/list/")
+@admin.route("/auth/list/<int:page>", methods=["GET"])
 @admin_login_req
-def auth_list():
-    return render_template("admin/auth_list.html")
+def auth_list(page):
+    if page is None:
+        page = 1
+    page_data = Auth.query.order_by(
+        Auth.addtime.desc()
+    ).paginate(page=page, per_page=5)
+
+    return render_template("admin/auth_list.html", page_data=page_data)
 
 
 @admin.route("/admin/add/", methods=['GET', 'POST'])
