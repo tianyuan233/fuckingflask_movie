@@ -1,8 +1,8 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, TextAreaField, FileField, SelectField
+from wtforms import StringField, PasswordField, SubmitField, TextAreaField, FileField, SelectField, SelectMultipleField
 from wtforms.validators import DataRequired, ValidationError
 
-from app.models import Admin, Tag, Role
+from app.models import Admin, Tag, Role, Auth
 
 
 class LoginForm(FlaskForm):
@@ -154,13 +154,13 @@ class AuthForm(FlaskForm):
         label="权限名称",
         validators=[DataRequired("请输入权限名称")],
         description="权限名称",
-        render_kw={"class": "form-control", "placeholder": "请输入权限名称！", }
+        render_kw={"class": "form-control", }
     )
     url = StringField(
         label="权限地址",
         validators=[DataRequired("请输入权限地址")],
         description="权限地址",
-        render_kw={"class": "form-control", "placeholder": "请输入权限地址!", }
+        render_kw={"class": "form-control", }
     )
 
     submit = SubmitField(
@@ -208,3 +208,31 @@ class AdminForm(FlaskForm):
     def __init__(self, *args, **kwargs):
         super(AdminForm, self).__init__(*args, **kwargs)
         self.role_id.choices = [(v.id, v.name) for v in Role.query.all()]
+
+
+class RoleForm(FlaskForm):
+    """角色表单"""
+    name = StringField(
+        label="角色名称",
+        validators=[DataRequired("请输入角色名称")],
+        description="角色名称",
+        render_kw={"class": "form-control", }
+    )
+    auths = SelectMultipleField(
+        label="权限列表",
+        validators=[DataRequired("请选择权限列表")],
+        coerce=int,
+        description="权限列表",
+        render_kw={
+            "class":"form-control"
+        }
+    )
+
+    submit = SubmitField(
+        '添加',
+        render_kw={"class": "btn btn-primary btn-block btn-flat"}
+    )
+
+    def __init__(self, *args, **kwargs):
+        super(RoleForm, self).__init__(*args, **kwargs)
+        self.auths.choices = [(v.id, v.name) for v in Auth.query.all()]

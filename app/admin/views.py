@@ -8,7 +8,7 @@ from werkzeug.security import generate_password_hash
 from werkzeug.utils import secure_filename
 
 from app import db, app
-from app.admin.forms import LoginForm, TagForm, MovieForm, PreviewForm, PwdForm, AdminForm, AuthForm
+from app.admin.forms import LoginForm, TagForm, MovieForm, PreviewForm, PwdForm, AdminForm, AuthForm, RoleForm
 from app.models import Admin, Tag, Movie, Preview, User, Comment, Moviecol, Oplog, Userlog, Adminlog, Role, Auth
 from . import admin
 
@@ -463,7 +463,7 @@ def oplog_list(page):
         Admin.id == Oplog.admin_id
     ).order_by(
         Oplog.addtime.desc()
-    ).paginate(page=page, per_page=2)
+    ).paginate(page=page, per_page=20)
 
     return render_template("admin/oplog_list.html", page_data=page_data)
 
@@ -501,17 +501,41 @@ def userloginlog_list(page):
 
 
 # 角色添加
-@admin.route("/role/add/")
+@admin.route("/role/add/", methods=["GET","POST"])
 @admin_login_req
 def role_add():
-    return render_template("admin/role_add.html")
+    form = RoleForm()
+    if form.validate_on_submit():
+        data = form.data
+        role = Role.query.filter_by(name=data["name"]).count()
+        if role == 1:
+            flash("该角色已存在", "error")
+            return redirect(url_for("admin.role_add"))
+        role = Role(
+            name=data["name"],
+            auths=",".join(map(lambda v: str(v),data["auths"]))
+        )
+        db.session.add(role)
+        db.session.commit()
+        oplog = Oplog(
+            admin_id=session["admin_id"],
+            ip=request.remote_addr,
+            reason="添加角色 %s" % data["name"]
+        )
+        db.session.add(oplog)
+        db.session.commit()
+        flash("已成功添加角色", "ok")
+        return redirect(url_for("admin.role_add"))
+    return render_template("admin/role_add.html", form=form)
 
 
 @admin.route("/role/list/")
 @admin_login_req
 def role_list():
     return render_template("admin/role_list.html")
-#权限添加
+
+
+# 权限添加
 @admin.route("/auth/add/", methods=['GET', 'POST'])
 @admin_login_req
 def auth_add():
@@ -526,13 +550,64 @@ def auth_add():
         db.session.commit()
         flash("添加权限成功", "ok")
         return redirect(url_for("admin.auth_add"))
-    return render_template("admin/auth_add.html",form=form)
+    return render_template("admin/auth_add.html", form=form)
 
 
-@admin.route("/auth/list/")
+# 权限列表
+@admin.route("/auth/list/<int:page>")
 @admin_login_req
-def auth_list():
-    return render_template("admin/auth_list.html")
+def auth_list(page):
+    if page is None:
+        page = 1
+    page_data = Auth.query.order_by(
+        Auth.addtime.desc()
+    ).paginate(page=page, per_page=10)
+    return render_template("admin/auth_list.html", page_data=page_data)
+
+
+# 权限编辑
+@admin.route("/auth/edit/<int:id>", methods=['GET', 'POST'])
+@admin_login_req
+def auth_edit(id):
+    form = AuthForm()
+    auth = Auth.query.get_or_404(id)
+    if form.validate_on_submit():
+        data = form.data
+        auth_count = Auth.query.filter_by(name=data["name"]).count()
+        if auth_count == 1 and auth.name != data["name"]:
+            flash("该权限已存在", "error")
+            return redirect(url_for("admin.auth_edit", id=id))
+        auth.name = data["name"]
+        db.session.add(auth)
+        db.session.commit()
+        oplog = Oplog(
+            admin_id=session["admin_id"],
+            ip=request.remote_addr,
+            reason= "权限[%s]修改为[%s]" % (auth.url, data["url"])
+        )
+        db.session.add(oplog)
+        db.session.commit()
+        flash("已成功修改标签", "ok")
+        return redirect(url_for("admin.auth_edit", id=id))
+    return render_template("admin/auth_edit.html", form=form, auth=auth)
+
+
+# 权限删除
+@admin.route("/auth/del/<int:id>")
+@admin_login_req
+def auth_del(id):
+    auth = Auth.query.filter_by(id=id).first_or_404()
+    db.session.delete(auth)
+    db.session.commit()
+    oplog = Oplog(
+        admin_id=session["admin_id"],
+        ip=request.remote_addr,
+        reason="删除权限 %s" % auth.name
+    )
+    db.session.add(oplog)
+    db.session.commit()
+    flash("已成功删除权限", "ok")
+    return redirect(url_for("admin.auth_list", page=1))
 
 
 @admin.route("/admin/add/", methods=['GET', 'POST'])
