@@ -529,6 +529,7 @@ def role_add():
     return render_template("admin/role_add.html", form=form)
 
 
+# 角色列表
 @admin.route("/role/list/<int:page>",methods=["GET"])
 @admin_login_req
 def role_list(page):
@@ -538,6 +539,50 @@ def role_list(page):
         Role.addtime
     ).paginate(page=page, per_page=5)
     return render_template("admin/role_list.html",page_data=page_data)
+
+
+# 角色编辑
+@admin.route("/role/edit/<int:id>", methods=['GET', 'POST'])
+def role_edit(id):
+    form = RoleForm()
+    role = Role.query.get_or_404(id)
+    if request.method == "GET":
+        auths = role.auths
+        form.auths.data = list(map(lambda v: int(v), auths.split(",")))
+    if form.validate_on_submit():
+        data = form.data
+        role.name = data["name"]
+        role.auths = ",".join(map(lambda v: str(v), data["auths"]))
+        db.session.add(role)
+        db.session.commit()
+        oplog = Oplog(
+            admin_id=session["admin_id"],
+            ip=request.remote_addr,
+            reason="角色[%s]修改为[%s]" % (role.name, data["name"])
+        )
+        db.session.add(oplog)
+        db.session.commit()
+        flash("已成功修改角色", "ok")
+        return redirect(url_for("admin.role_list", page=1))
+    return render_template("admin/role_edit.html", form=form, role=role)
+
+
+# 角色删除
+@admin.route("/role/del/<int:id>")
+@admin_login_req
+def role_del(id):
+    role = Role.query.filter_by(id=id).first_or_404()
+    db.session.delete(role)
+    db.session.commit()
+    oplog = Oplog(
+        admin_id=session["admin_id"],
+        ip=request.remote_addr,
+        reason="删除角色 %s" % role.name
+    )
+    db.session.add(oplog)
+    db.session.commit()
+    flash("已成功删除权限", "ok")
+    return redirect(url_for("admin.role_list", page=1))
 
 
 # 权限添加
@@ -557,7 +602,6 @@ def auth_add():
         return redirect(url_for("admin.auth_add"))
     return render_template("admin/auth_add.html", form=form)
 
-
 # 权限列表
 @admin.route("/auth/list/<int:page>")
 @admin_login_req
@@ -569,7 +613,6 @@ def auth_list(page):
     ).paginate(page=page, per_page=10)
     return render_template("admin/auth_list.html", page_data=page_data)
 
-
 # 权限编辑
 @admin.route("/auth/edit/<int:id>", methods=['GET', 'POST'])
 @admin_login_req
@@ -578,10 +621,6 @@ def auth_edit(id):
     auth = Auth.query.get_or_404(id)
     if form.validate_on_submit():
         data = form.data
-        auth_count = Auth.query.filter_by(name=data["name"]).count()
-        if auth_count == 1 and auth.name != data["name"]:
-            flash("该权限已存在", "error")
-            return redirect(url_for("admin.auth_edit", id=id))
         auth.name = data["name"]
         db.session.add(auth)
         db.session.commit()
@@ -593,7 +632,7 @@ def auth_edit(id):
         db.session.add(oplog)
         db.session.commit()
         flash("已成功修改标签", "ok")
-        return redirect(url_for("admin.auth_edit", id=id))
+        return redirect(url_for("admin.auth_list", page=1))
     return render_template("admin/auth_edit.html", form=form, auth=auth)
 
 
@@ -621,10 +660,15 @@ def admin_add():
     form = AdminForm()
     if form.validate_on_submit():
         data = form.data
+        admin = Admin.query.filter_by(name=data["name"]).count()
+        if admin == 1:
+            flash("该角色已存在", "error")
+            return redirect(url_for("admin.admin_add"))
         admin = Admin(
             name=data['name'],
             pwd=generate_password_hash(data['pwd']),
-            role_id=int(data['role_id'])
+            role_id=int(data['role_id']),
+            is_super=1
         )
         db.session.add(admin)
         db.session.commit()

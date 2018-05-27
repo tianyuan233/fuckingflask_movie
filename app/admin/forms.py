@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, TextAreaField, FileField, SelectField, SelectMultipleField
-from wtforms.validators import DataRequired, ValidationError
+from wtforms.validators import DataRequired, ValidationError, EqualTo
 
 from app.models import Admin, Tag, Role, Auth
 
@@ -187,7 +187,10 @@ class AdminForm(FlaskForm):
 
     re_pwd = PasswordField(
         label="密码",
-        validators=[DataRequired("请再次输入密码")],
+        validators=[
+            DataRequired("请再次输入密码"),
+            EqualTo('pwd', message="两次密码不一致！")
+        ],
         description="密码",
         render_kw={"class": "form-control", "placeholder": "请再次输入密码！", }
     )
@@ -202,7 +205,7 @@ class AdminForm(FlaskForm):
 
     submit = SubmitField(
         '添加',
-        render_kw={"class": "btn btn-primary btn-block btn-flat"}
+        render_kw={"class": "btn btn-primary"}
     )
 
     def __init__(self, *args, **kwargs):
@@ -230,7 +233,7 @@ class RoleForm(FlaskForm):
 
     submit = SubmitField(
         '添加',
-        render_kw={"class": "btn btn-primary btn-block btn-flat"}
+        render_kw={"class": "btn btn-primary"}
     )
 
     def __init__(self, *args, **kwargs):
