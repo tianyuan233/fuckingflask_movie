@@ -3,7 +3,7 @@ import os
 import uuid
 from functools import wraps
 
-from flask import render_template, redirect, url_for, flash, session, request
+from flask import render_template, redirect, url_for, flash, session, request, abort
 from werkzeug.security import generate_password_hash
 from werkzeug.utils import secure_filename
 
@@ -22,12 +22,36 @@ def tpl_extra():
     return data
 
 
-# 登录验证
+# 登录验证装饰器
 def admin_login_req(f):
     @wraps(f)
     def defcorated_function(*args, **kwargs):
         if "admin" not in session:
             return redirect(url_for("admin.login", next=request.url))
+        return f(*args, **kwargs)
+
+    return defcorated_function
+
+
+# 权限控制装饰器
+def admin_auth(f):
+    @wraps(f)
+    def defcorated_function(*args, **kwargs):
+        admin = Admin.query.join(
+            Role
+        ).filter(
+            Role.id == Admin.role_id,
+            Admin.id == session["admin_id"]
+        ).first()
+        auths = admin.role.auths
+        auths = list(map(lambda v: int(v), auths.split(",")))
+        auth_list = Auth.query.all()
+        urls = [v.url for v in auth_list for val in auths if val == v.id]
+        rule = str(request.url_rule)
+        print(urls)
+        print(rule)
+        if rule not in urls:
+            abort(404)
         return f(*args, **kwargs)
 
     return defcorated_function
@@ -94,7 +118,9 @@ def pwd():
 
 @admin.route("/tag/add/", methods=['GET', 'POST'])
 @admin_login_req
+@admin_auth
 def tag_add():
+    print(request.url_rule)
     form = TagForm()
     if form.validate_on_submit():
         data = form.data
@@ -178,6 +204,7 @@ def tag_edit(id):
 
 @admin.route("/movie/add/", methods=['GET', 'POST'])
 @admin_login_req
+@admin_auth
 def movie_add():
     form = MovieForm()
     if form.validate_on_submit():
@@ -501,7 +528,7 @@ def userloginlog_list(page):
 
 
 # 角色添加
-@admin.route("/role/add/", methods=["GET","POST"])
+@admin.route("/role/add/", methods=["GET", "POST"])
 @admin_login_req
 def role_add():
     form = RoleForm()
@@ -513,7 +540,7 @@ def role_add():
             return redirect(url_for("admin.role_add"))
         role = Role(
             name=data["name"],
-            auths=",".join(map(lambda v: str(v),data["auths"]))
+            auths=",".join(map(lambda v: str(v), data["auths"]))
         )
         db.session.add(role)
         db.session.commit()
@@ -530,15 +557,15 @@ def role_add():
 
 
 # 角色列表
-@admin.route("/role/list/<int:page>",methods=["GET"])
+@admin.route("/role/list/<int:page>", methods=["GET"])
 @admin_login_req
 def role_list(page):
     if page is None:
-        page =1
+        page = 1
     page_data = Role.query.order_by(
         Role.addtime
     ).paginate(page=page, per_page=5)
-    return render_template("admin/role_list.html",page_data=page_data)
+    return render_template("admin/role_list.html", page_data=page_data)
 
 
 # 角色编辑
@@ -602,6 +629,7 @@ def auth_add():
         return redirect(url_for("admin.auth_add"))
     return render_template("admin/auth_add.html", form=form)
 
+
 # 权限列表
 @admin.route("/auth/list/<int:page>")
 @admin_login_req
@@ -612,6 +640,7 @@ def auth_list(page):
         Auth.addtime.desc()
     ).paginate(page=page, per_page=10)
     return render_template("admin/auth_list.html", page_data=page_data)
+
 
 # 权限编辑
 @admin.route("/auth/edit/<int:id>", methods=['GET', 'POST'])
@@ -627,7 +656,7 @@ def auth_edit(id):
         oplog = Oplog(
             admin_id=session["admin_id"],
             ip=request.remote_addr,
-            reason= "权限[%s]修改为[%s]" % (auth.url, data["url"])
+            reason="权限[%s]修改为[%s]" % (auth.url, data["url"])
         )
         db.session.add(oplog)
         db.session.commit()
@@ -689,3 +718,9 @@ def admin_list(page):
     ).paginate(page=page, per_page=5)
 
     return render_template("admin/admin_list.html", page_data=page_data)
+
+
+@admin.route("/url", methods=["GET"])
+def admin_url():
+    a = request.url_rule
+    return a
