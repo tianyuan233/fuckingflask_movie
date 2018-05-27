@@ -529,10 +529,15 @@ def role_add():
     return render_template("admin/role_add.html", form=form)
 
 
-@admin.route("/role/list/")
+@admin.route("/role/list/<int:page>",methods=["GET"])
 @admin_login_req
-def role_list():
-    return render_template("admin/role_list.html")
+def role_list(page):
+    if page is None:
+        page =1
+    page_data = Role.query.order_by(
+        Role.addtime
+    ).paginate(page=page, per_page=5)
+    return render_template("admin/role_list.html",page_data=page_data)
 
 
 # 权限添加
