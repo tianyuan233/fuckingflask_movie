@@ -1,5 +1,11 @@
-from flask import render_template, redirect, url_for
+from uuid import uuid4
 
+from flask import render_template, redirect, url_for, flash
+from werkzeug.security import generate_password_hash
+
+from app import db
+from app.home.forms import RegisterForm
+from app.models import User
 from . import home
 
 
@@ -18,9 +24,27 @@ def logout():
     return redirect(url_for("home.login"))
 
 
-@home.route("/register/")
+@home.route("/register/", methods=["GET", "POST"])
 def register():
-    return render_template('home/register.html')
+    form = RegisterForm()
+
+    if form.validate_on_submit():
+        data = form.data
+        form.validate_email(data["email"])
+        form.validate_name(data["name"])
+        form.validate_phone(data["phone"])
+        user = User(
+            name=data["name"],
+            email=data["email"],
+            phone=data["phone"],
+            pwd=generate_password_hash(data["pwd"]),
+            uuid=uuid4().hex
+        )
+        db.session.add(user)
+        db.session.commit()
+        flash("注册成功", "ok")
+
+    return render_template('home/register.html', form=form)
 
 
 @home.route("/user/")
@@ -47,6 +71,7 @@ def loginlog():
 def moviecol():
     return render_template('home/moviecol.html')
 
+
 # @home.route("/")
 # def index():
 #     return render_template('home/index.html')
@@ -55,9 +80,11 @@ def moviecol():
 def animation():
     return render_template('home/animation.html')
 
+
 @home.route("/search/")
 def search():
     return render_template('home/search.html')
+
 
 @home.route("/play/")
 def play():
