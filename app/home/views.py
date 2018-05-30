@@ -1,13 +1,18 @@
 from uuid import uuid4
 
 from flask import render_template, redirect, url_for, flash, session, request
+from flask_login import login_user, logout_user, login_required
 from werkzeug.security import generate_password_hash
 
-from app import db
+from app import db, login_manager
 from app.home.forms import RegisterForm, LoginForm
 from app.models import User, Userlog
 from . import home
 
+
+@login_manager.user_loader
+def load_user(id):
+    return User.query.get(int(id))
 
 @home.route("/")
 def index():
@@ -18,33 +23,32 @@ def index():
 def login():
     form = LoginForm()
     if form.validate_on_submit():
-        data = form.data
-        user = User.query.filter_by(name=data["name"]).first()
-        if not user.check_pwd(data["pwd"]):
-            flash("密码错误", "error")
-            return redirect(url_for("home.login"))
-        session["user"] = data["name"]
-        session["user_id"] = user.id
-
-        userlog = Userlog(
-            user_id=user.id,
-            ip=request.remote_addr,
-        )
-        db.session.add(userlog)
-        db.session.commit()
-        return redirect(request.args.get("next") or url_for("home.index"))
+        user = User.query.filter_by(name=form.name.data).first()
+        if user and user.verify_password(form.pwd.data):
+            login_user(user)
+            userlog = Userlog(
+                user_id=user.id,
+                ip=request.remote_addr,
+            )
+            db.session.add(userlog)
+            db.session.commit()
+            return redirect(request.args.get("next") or url_for("home.index"))
+            flash(u'登录成功',"ok")
+        flash('用户名或密码不正确',"error")
     return render_template('home/login.html', form=form)
 
 
 @home.route("/logout/")
+@login_required
 def logout():
+    logout_user()
+    flash('You have been logged out.')
     return redirect(url_for("home.login"))
 
 
 @home.route("/register/", methods=["GET", "POST"])
 def register():
     form = RegisterForm()
-
     if form.validate_on_submit():
         data = form.data
         user = User(
