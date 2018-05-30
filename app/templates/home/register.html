@@ -9,7 +9,7 @@
                         {% with errors = get_flashed_messages(category_filter=["error"]) %}
                             {% if errors %}
                                 {% for msg in errors %}
-                                    <div>{{ msg }}</div>
+                                    <div class="panel-title">{{ msg }}</div>
                                 {% endfor %}
                             {% endif %}
                         {% endwith %}
@@ -18,7 +18,7 @@
                         {% with ok = get_flashed_messages(category_filter=["ok"]) %}
                             {% if ok %}
                                 {% for msg in ok %}
-                                    <div>{{ msg }}</div>
+                                    <div class="panel-title">{{ msg }}</div>
                                 {% endfor %}
                             {% endif %}
                         {% endwith %}

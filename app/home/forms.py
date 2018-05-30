@@ -3,7 +3,6 @@ from wtforms.fields import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired, EqualTo, Email, Regexp, ValidationError
 
 from app.models import User
-from werkzeug.security import generate_password_hash
 
 
 class RegisterForm(FlaskForm):
@@ -53,19 +52,53 @@ class RegisterForm(FlaskForm):
     )
 
     def validate_name(self, field):
+        print("自定义验证函数-name")
         name = field.data
-        user = User.query.filter_by(name=name).count
+        print(name)
+        user = User.query.filter_by(name=name).count()
         if user == 1:
             raise ValidationError("昵称已存在")
 
     def validate_phone(self, field):
+        print("自定义验证函数-phone")
         phone = field.data
-        user = User.query.filter_by(phone=phone).count
+        print(phone)
+        user = User.query.filter_by(phone=phone).count()
         if user == 1:
             raise ValidationError("手机号已存在")
 
     def validate_email(self, field):
+        print("自定义验证函数-email")
         email = field.data
-        user = User.query.filter_by(email=email).count
+        print(email)
+        user = User.query.filter_by(email=email).count()
         if user == 1:
             raise ValidationError("邮箱已存在")
+
+
+class LoginForm(FlaskForm):
+    """用户登录表单"""
+    name = StringField(
+        label="账号",
+        validators=[DataRequired("请输入账号")],
+        description="账号",
+        render_kw={"class": "form-control", "placeholder": "请输入账号！", }
+    )
+
+    pwd = PasswordField(
+        label="密码",
+        validators=[DataRequired("请输入密码")],
+        description="密码",
+        render_kw={"class": "form-control", "placeholder": "请输入密码！", }
+    )
+
+    submit = SubmitField(
+        '登录',
+        render_kw={"class": "btn btn-primary btn-block btn-flat"}
+    )
+
+    def validate_name(self, field):
+        name = field.data
+        admin = User.query.filter_by(name=name).count()
+        if admin == 0:
+            raise ValidationError("账号不存在")

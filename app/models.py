@@ -1,7 +1,5 @@
 from datetime import datetime
 
-from werkzeug.security import generate_password_hash
-
 from app import db
 
 
@@ -27,6 +25,7 @@ class User(db.Model):
     def check_pwd(self, pwd):
         from werkzeug.security import check_password_hash
         return check_password_hash(self.pwd, pwd)
+
 
 # 会员登录日志
 class Userlog(db.Model):
@@ -131,7 +130,7 @@ class Role(db.Model):
     name = db.Column(db.String(255), unique=True)
     auths = db.Column(db.String(600))
     addtime = db.Column(db.DateTime, index=True, default=datetime.now)
-    admin = db.relationship('Admin',backref="role")
+    admin = db.relationship('Admin', backref="role")
 
     def __repr__(self):
         return "<Role %r>" % self.name
@@ -180,6 +179,7 @@ class Oplog(db.Model):
 
     def __repr__(self):
         return "<Oplog %r>" % self.id
+
 #
 # #
 # if __name__ == '__main__':
