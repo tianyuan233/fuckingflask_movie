@@ -1,8 +1,6 @@
 from flask import Flask
 from flask import render_template
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager
-
 import os
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://root:123456@localhost:3306/movie"
@@ -12,9 +10,6 @@ app.config["UP_DIR"] = os.path.join(os.path.dirname(os.path.abspath(__file__)),'
 app.debug = True
 
 db = SQLAlchemy(app)
-
-login_manager = LoginManager()
-login_manager.init_app(app)
 
 from app.home import home as home_blueprint
 from app.admin import admin as admin_blueprint
