@@ -4,18 +4,14 @@ import uuid
 from functools import wraps
 
 from flask import render_template, redirect, url_for, flash, session, request, abort
-from flask_login import login_user, logout_user, login_required
+
 from werkzeug.security import generate_password_hash
 from werkzeug.utils import secure_filename
 
-from app import db, app, login_manager
+from app import db, app
 from app.admin.forms import LoginForm, TagForm, MovieForm, PreviewForm, PwdForm, AdminForm, AuthForm, RoleForm
 from app.models import Admin, Tag, Movie, Preview, User, Comment, Moviecol, Oplog, Userlog, Adminlog, Role, Auth
 from . import admin
-
-@login_manager.user_loader
-def load_user(id):
-    return Admin.query.get(int(id))
 
 # 上下文处理器
 @admin.context_processor
@@ -27,14 +23,14 @@ def tpl_extra():
 
 
 # 登录验证装饰器
-# def admin_login_req(f):
-#     @wraps(f)
-#     def defcorated_function(*args, **kwargs):
-#         if "admin" not in session:
-#             return redirect(url_for("admin.login", next=request.url))
-#         return f(*args, **kwargs)
-#
-#     return defcorated_function
+def admin_login_req(f):
+    @wraps(f)
+    def defcorated_function(*args, **kwargs):
+        if "admin" not in session:
+            return redirect(url_for("admin.login", next=request.url))
+        return f(*args, **kwargs)
+
+    return defcorated_function
 
 
 # 权限控制装饰器
@@ -92,17 +88,13 @@ def login():
 
 
 @admin.route("/logout/")
-@login_required
 def logout():
-    logout_user()
     flash('You have been logged out.')
     return redirect(url_for("admin.login"))
 
 
 # 修改密码
-
 @admin.route("/pwd/", methods=['GET', 'POST'])
-@login_required
 def pwd():
     form = PwdForm()
     if form.validate_on_submit():

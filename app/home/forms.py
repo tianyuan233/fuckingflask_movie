@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms.fields import StringField, PasswordField, SubmitField
+from wtforms.fields import StringField, PasswordField, SubmitField, FileField, TextAreaField
 from wtforms.validators import DataRequired, EqualTo, Email, Regexp, ValidationError
 
 from app.models import User
@@ -102,3 +102,44 @@ class LoginForm(FlaskForm):
         admin = User.query.filter_by(name=name).count()
         if admin == 0:
             raise ValidationError("账号不存在")
+
+
+class UserdetailForm(FlaskForm):
+    name = StringField(
+        label="账号",
+        validators=[DataRequired("请输入账号")],
+        description="账号",
+        render_kw={"class": "form-control input-lg", "placeholder": "请输入账号！", }
+    )
+
+    email = StringField(
+        label="邮箱",
+        validators=[DataRequired("请输入邮箱"),
+                    Email("邮箱格式不正确")],
+        description="email",
+        render_kw={"class": "form-control input-lg", "placeholder": "请输入邮箱！", }
+    )
+    phone = StringField(
+        label="手机号",
+        validators=[DataRequired("请输入手机号"),
+                    Regexp("1\d{10}", message="手机号码格式不正确")],
+        description="email",
+        render_kw={"class": "form-control input-lg", "placeholder": "请输入邮箱！", }
+
+    )
+
+    face = FileField(
+        label="头像",
+        validators=[DataRequired("请上传头像")],
+        description="头像"
+    )
+    info = TextAreaField(
+        label="简介",
+        validators=[DataRequired("请输入简介")],
+        description="标签",
+        render_kw={"class": "form-control", "rows": 10, "placeholder": "请输入简介"})
+
+    submit = SubmitField(
+        label="保存修改",
+        render_kw={"class": "btn btn-lg btn-success"}
+    )
