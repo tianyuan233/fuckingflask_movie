@@ -34,7 +34,7 @@ def login():
         if not user.check_pwd(data["pwd"]):
             flash("密码错误", "error")
             return redirect(url_for("home.login"))
-        session["user"] = data["name"]
+        session["user"] = user.name
         session["user_id"] = user.id
 
         userlog = Userlog(
@@ -46,16 +46,15 @@ def login():
         return redirect(request.args.get("next") or url_for("home.index"))
     return render_template('home/login.html', form=form)
 
-
+#退出
 @home.route("/logout/")
 def logout():
     return redirect(url_for("home.login"))
 
-
+#注册
 @home.route("/register/", methods=["GET", "POST"])
 def register():
     form = RegisterForm()
-
     if form.validate_on_submit():
         data = form.data
         user = User(
@@ -71,7 +70,7 @@ def register():
 
     return render_template('home/register.html', form=form)
 
-
+#用户页
 @home.route("/user/", methods=["GET", "POST"])
 def user():
     form = UserdetailForm()
@@ -119,7 +118,7 @@ def user():
         return redirect(url_for("home.user"))
     return render_template("home/user.html", form=form, user=user)
 
-
+#修改密码
 @home.route("/pwd/",methods=["GET","POST"])
 def pwd():
     form = PwdForm()
@@ -140,9 +139,19 @@ def comments():
     return render_template('home/comments.html')
 
 
-@home.route("/loginlog/")
-def loginlog():
-    return render_template('home/loginlog.html')
+@home.route("/loginlog/<int:page>/",methods=["GET"])
+def loginlog(page=None):
+    if page is None:
+        page ==1
+    print(session["user_id"])
+    page_data = Userlog.query.filter_by(
+        user_id=int(session["user_id"])
+        ).order_by(
+            Userlog.addtime.desc()
+        ).paginate(page=page, per_page=2)
+    for v in page_data.items:
+        print(v)
+    return render_template('home/loginlog.html',page_data=page_data)
 
 
 @home.route("/moviecol/")
