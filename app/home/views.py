@@ -166,9 +166,22 @@ def loginlog(page=None):
     return render_template('home/loginlog.html',page_data=page_data)
 
 
-@home.route("/moviecol/")
-def moviecol():
-    return render_template('home/moviecol.html')
+@home.route("/moviecol/<int:page>",methods=["GET"])
+def moviecol(page=None):
+    if page is None:
+        page = 1
+    page_data = Moviecol.query.join(
+        Movie
+    ).join(
+        User
+    ).filter(
+        Moviecol.user_id == User.id,
+        Moviecol.movie_id == Movie.id
+    ).order_by(
+        Moviecol.addtime.desc()
+    ).paginate(page=page, per_page=10)
+
+    return render_template('home/moviecol.html',page_data=page_data)
 
 
 # @home.route("/")
