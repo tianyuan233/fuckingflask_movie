@@ -143,3 +143,31 @@ class UserdetailForm(FlaskForm):
         label="保存修改",
         render_kw={"class": "btn btn-lg btn-success"}
     )
+
+class PwdForm(FlaskForm):
+    old_pwd = PasswordField(
+        label="旧密码",
+        validators=[DataRequired("旧密码")],
+        description="密码",
+        render_kw={"class": "form-control", "placeholder": "旧密码！", }
+    )
+
+    new_pwd = PasswordField(
+        label="新密码",
+        validators=[DataRequired("新密码")],
+        description="密码",
+        render_kw={"class": "form-control", "placeholder": "新密码！", }
+    )
+
+    submit = SubmitField('修改密码', render_kw={"class": "btn btn-success"})
+
+    def validate_old_pwd(self, field):
+        from flask import session
+        pwd = field.data
+        name = session["user"]
+        print(name)
+        user = User.query.filter_by(
+            name=name
+        ).first()
+        if not user.check_pwd(pwd):
+            raise ValidationError("密码不正确")

@@ -8,7 +8,7 @@ from werkzeug.security import generate_password_hash
 from werkzeug.utils import secure_filename
 
 from app import db, app
-from app.home.forms import RegisterForm, LoginForm, UserdetailForm
+from app.home.forms import RegisterForm, LoginForm, UserdetailForm, PwdForm
 from app.models import User, Userlog
 from . import home
 
@@ -120,9 +120,19 @@ def user():
     return render_template("home/user.html", form=form, user=user)
 
 
-@home.route("/pwd/")
+@home.route("/pwd/",methods=["GET","POST"])
 def pwd():
-    return render_template('home/pwd.html')
+    form = PwdForm()
+    if form.validate_on_submit():
+        data = form.data
+        user = User.query.filter_by(name=session["user"]).first()
+        from werkzeug.security import generate_password_hash
+        user.pwd = generate_password_hash(data["new_pwd"])
+        db.session.add(user)
+        db.session.commit()
+        flash("已成功修改密码", "ok")
+        return redirect(url_for("home.pwd"))
+    return render_template('home/pwd.html',form=form)
 
 
 @home.route("/comments/")

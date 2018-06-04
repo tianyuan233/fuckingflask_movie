@@ -5,27 +5,31 @@
         <div class="row">
             <div class="col-md-4 col-md-offset-4">
                 <div class="panel panel-success">
-                    <div>
-                        {% with errors = get_flashed_messages(category_filter=["error"]) %}
-                            {% if errors %}
-                                {% for msg in errors %}
-                                    <div class="panel-title">{{ msg }}</div>
-                                {% endfor %}
-                            {% endif %}
-                        {% endwith %}
-                    </div>
-                    <div>
-                        {% with ok = get_flashed_messages(category_filter=["ok"]) %}
-                            {% if ok %}
-                                {% for msg in ok %}
-                                    <div class="panel-title">{{ msg }}</div>
-                                {% endfor %}
-                            {% endif %}
-                        {% endwith %}
-                    </div>
                     <div class="panel-heading">
                         <h3 class="panel-title"><span class="glyphicon glyphicon-plus"></span>&nbsp;会员注册</h3>
                     </div>
+                    <div>
+                {% with errors = get_flashed_messages(category_filter=["error"]) %}
+                    {% if errors %}
+                        {% for msg in errors %}
+                            <div class="alert alert-danger alert-dismissible">
+                                {{ msg }}
+                            </div>
+
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                {% with ok = get_flashed_messages(category_filter=["ok"]) %}
+                    {% if ok %}
+                        {% for msg in ok %}
+                            <div class="alert alert-success alert-dismissible">
+                                {{ msg }}
+                            </div>
+
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+            </div>
                     <div class="panel-body">
 
                         <form role="form" , method="post">
