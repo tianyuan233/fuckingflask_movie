@@ -14,7 +14,7 @@ from . import home
 
 
 # 修改文件名称
-def change_file(filename):
+def change_filename(filename):
     fileinfo = os.path.splitext(filename)
     filename = datetime.datetime.now().strftime("%Y%m%d%H%M%S") + str(uuid.uuid4().hex) + fileinfo[-1]
     return filename
@@ -76,41 +76,48 @@ def register():
 def user():
     form = UserdetailForm()
     user = User.query.get(int(session["user_id"]))
+    form.face.validators = []
     if request.method == "GET":
+        # 赋初值
         form.name.data = user.name
         form.email.data = user.email
         form.phone.data = user.phone
         form.info.data = user.info
     if form.validate_on_submit():
         data = form.data
-        file_face = secure_filename(form.face.data.filename)
-        if not os.path.exists(app.config["FC_DIR"]):
-            os.makedirs(app.config["FC_DIR"])
-        user.face = change_file(file_face)
-        form.face.data.save(app.config["FC_DIR"] + user.face)
+        if form.face.data != "":
+            file_face = secure_filename(form.face.data.filename)
+            if not os.path.exists(app.config["FC_DIR"]):
+                os.makedirs(app.config["FC_DIR"])
+                os.chmod(app.config["FC_DIR"])
+            user.face = change_filename(file_face)
+            form.face.data.save(app.config["FC_DIR"] + user.face)
 
         name_count = User.query.filter_by(name=data["name"]).count()
         if data["name"] != user.name and name_count == 1:
-            flash("用户名已存在", "error")
-            return redirect(url_for("user.login"))
+            flash("昵称已经存在!", "error")
+            return redirect(url_for("home.user"))
+
         email_count = User.query.filter_by(email=data["email"]).count()
         if data["email"] != user.email and email_count == 1:
-            flash("邮箱已存在", "error")
-            return redirect(url_for("user.home"))
+            flash("邮箱已经存在!", "error")
+            return redirect(url_for("home.user"))
+
         phone_count = User.query.filter_by(phone=data["phone"]).count()
         if data["phone"] != user.phone and phone_count == 1:
-            flash("电话已存在", "error")
-            return redirect(url_for("user.home"))
+            flash("手机已经存在!", "error")
+            return redirect(url_for("home.user"))
 
+        # 保存
         user.name = data["name"]
         user.email = data["email"]
         user.phone = data["phone"]
         user.info = data["info"]
         db.session.add(user)
         db.session.commit()
-        flash("注册成功", "ok")
+        flash("修改成功!", "ok")
         return redirect(url_for("home.user"))
-    return render_template('home/user.html', form=form, user=user)
+    return render_template("home/user.html", form=form, user=user)
 
 
 @home.route("/pwd/")
