@@ -9,7 +9,7 @@ from werkzeug.utils import secure_filename
 
 from app import db, app
 from app.home.forms import RegisterForm, LoginForm, UserdetailForm, PwdForm
-from app.models import User, Userlog
+from app.models import User, Userlog, Comment, Moviecol, Movie
 from . import home
 
 
@@ -134,21 +134,33 @@ def pwd():
     return render_template('home/pwd.html',form=form)
 
 
-@home.route("/comments/")
-def comments():
-    return render_template('home/comments.html')
+@home.route("/comments/<int:page>",methods=["GET"])
+def comments(page=None):
+    if page is None:
+        page = 1
+    page_data = Comment.query.join(
+        Movie
+    ).join(
+        User
+    ).filter(
+        Movie.id == Comment.movie_id,
+        User.id == Comment.user_id
+    ).order_by(
+        Comment.addtime.desc()
+    ).paginate(page=page, per_page=10)
+
+    return render_template('home/comments.html',page_data=page_data)
 
 
 @home.route("/loginlog/<int:page>/",methods=["GET"])
 def loginlog(page=None):
     if page is None:
-        page ==1
-    print(session["user_id"])
+        page = 1
     page_data = Userlog.query.filter_by(
         user_id=int(session["user_id"])
-        ).order_by(
-            Userlog.addtime.desc()
-        ).paginate(page=page, per_page=2)
+    ).order_by(
+        Userlog.addtime.desc()
+    ).paginate(page=page, per_page=10)
     for v in page_data.items:
         print(v)
     return render_template('home/loginlog.html',page_data=page_data)
