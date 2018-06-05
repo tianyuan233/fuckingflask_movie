@@ -9,7 +9,7 @@ from werkzeug.utils import secure_filename
 
 from app import db, app
 from app.home.forms import RegisterForm, LoginForm, UserdetailForm, PwdForm
-from app.models import User, Userlog, Comment, Moviecol, Movie
+from app.models import User, Userlog, Comment, Moviecol, Movie, Preview
 from . import home
 
 
@@ -190,6 +190,8 @@ def moviecol(page=None):
 
 @home.route("/animation/")
 def animation():
+    data = Preview.query.all()
+
     return render_template('home/animation.html')
 
 
@@ -200,4 +202,5 @@ def search():
 
 @home.route("/play/")
 def play():
+
     return render_template('home/play.html')
