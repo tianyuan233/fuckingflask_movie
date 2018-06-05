@@ -191,8 +191,10 @@ def moviecol(page=None):
 @home.route("/animation/")
 def animation():
     data = Preview.query.all()
+    for v in data:
+        v.id = v.id - 1
 
-    return render_template('home/animation.html')
+    return render_template('home/animation.html', data=data)
 
 
 @home.route("/search/")
