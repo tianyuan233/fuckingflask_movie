@@ -8,8 +8,8 @@ from werkzeug.security import generate_password_hash
 from werkzeug.utils import secure_filename
 
 from app import db, app
-from app.home.forms import RegisterForm, LoginForm, UserdetailForm, PwdForm
-from app.models import User, Userlog, Comment, Moviecol, Movie, Preview
+from app.home.forms import RegisterForm, LoginForm, UserdetailForm, PwdForm, CommentForm
+from app.models import User, Userlog, Comment, Moviecol, Movie, Preview, Tag
 from . import home
 
 
@@ -183,11 +183,6 @@ def moviecol(page=None):
 
     return render_template('home/moviecol.html',page_data=page_data)
 
-
-# @home.route("/")
-# def index():
-#     return render_template('home/index.html')
-
 @home.route("/animation/")
 def animation():
     data = Preview.query.all()
@@ -202,7 +197,44 @@ def search():
     return render_template('home/search.html')
 
 
-@home.route("/play/")
-def play():
+@home.route("/play/<int:id>/<int:page>/", methods=["GET", "POST"])
+def play(id=None, page=None):
+    print(id)
+    movie = Movie.query.join(Tag).filter(
+        Tag.id == Movie.tag_id,
+        Movie.id == int(id)
+    ).first_or_404()
 
-    return render_template('home/play.html')
+    if page is None:
+        page = 1
+    print(movie.title)
+    page_data = Comment.query.join(
+        Movie
+    ).join(
+        User
+    ).filter(
+        Movie.id == movie.id,
+        User.id == Comment.user_id
+    ).order_by(
+        Comment.addtime.desc()
+    ).paginate(page=page, per_page=10)
+
+    movie.playnum = movie.playnum + 1
+    form = CommentForm()
+    if "user" in session and form.validate_on_submit():
+        data = form.data
+        comment = Comment(
+            content=data["content"],
+            movie_id=movie.id,
+            user_id=session["user_id"]
+        )
+        db.session.add(comment)
+        db.session.commit()
+        movie.commentnum = movie.commentnum + 1
+        db.session.add(movie)
+        db.session.commit()
+        flash("添加评论成功！", "ok")
+        return redirect(url_for('home.play', id=movie.id, page=1))
+    db.session.add(movie)
+    db.session.commit()
+    return render_template("home/play.html", movie=movie, form=form, page_data=page_data)
