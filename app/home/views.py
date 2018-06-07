@@ -192,9 +192,22 @@ def animation():
     return render_template('home/animation.html', data=data)
 
 
-@home.route("/search/")
-def search():
-    return render_template('home/search.html')
+@home.route("/search/<int:page>")
+def search(page=None):
+    if page is None:
+        page = 1
+    key = request.args.get("key", "")
+    print(key)
+    movie_count = Movie.query.filter(
+        Movie.title.ilike('%' + key + '%')
+    ).count()
+    page_data = Movie.query.filter(
+        Movie.title.ilike('%' + key + '%')
+    ).order_by(
+        Movie.addtime.desc()
+    ).paginate(page=page, per_page=10)
+    page_data.key = key
+    return render_template("home/search.html", movie_count=movie_count, key=key, page_data=page_data)
 
 
 @home.route("/play/<int:id>/<int:page>/", methods=["GET", "POST"])
