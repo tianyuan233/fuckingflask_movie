@@ -46,12 +46,14 @@ def login():
         return redirect(request.args.get("next") or url_for("home.index"))
     return render_template('home/login.html', form=form)
 
-#退出
+
+# 退出
 @home.route("/logout/")
 def logout():
     return redirect(url_for("home.login"))
 
-#注册
+
+# 注册
 @home.route("/register/", methods=["GET", "POST"])
 def register():
     form = RegisterForm()
@@ -70,7 +72,8 @@ def register():
 
     return render_template('home/register.html', form=form)
 
-#用户页
+
+# 用户页
 @home.route("/user/", methods=["GET", "POST"])
 def user():
     form = UserdetailForm()
@@ -118,8 +121,9 @@ def user():
         return redirect(url_for("home.user"))
     return render_template("home/user.html", form=form, user=user)
 
-#修改密码
-@home.route("/pwd/",methods=["GET","POST"])
+
+# 修改密码
+@home.route("/pwd/", methods=["GET", "POST"])
 def pwd():
     form = PwdForm()
     if form.validate_on_submit():
@@ -131,10 +135,10 @@ def pwd():
         db.session.commit()
         flash("已成功修改密码", "ok")
         return redirect(url_for("home.pwd"))
-    return render_template('home/pwd.html',form=form)
+    return render_template('home/pwd.html', form=form)
 
 
-@home.route("/comments/<int:page>",methods=["GET"])
+@home.route("/comments/<int:page>", methods=["GET"])
 def comments(page=None):
     if page is None:
         page = 1
@@ -149,10 +153,10 @@ def comments(page=None):
         Comment.addtime.desc()
     ).paginate(page=page, per_page=10)
 
-    return render_template('home/comments.html',page_data=page_data)
+    return render_template('home/comments.html', page_data=page_data)
 
 
-@home.route("/loginlog/<int:page>/",methods=["GET"])
+@home.route("/loginlog/<int:page>/", methods=["GET"])
 def loginlog(page=None):
     if page is None:
         page = 1
@@ -163,10 +167,10 @@ def loginlog(page=None):
     ).paginate(page=page, per_page=10)
     for v in page_data.items:
         print(v)
-    return render_template('home/loginlog.html',page_data=page_data)
+    return render_template('home/loginlog.html', page_data=page_data)
 
 
-@home.route("/moviecol/<int:page>",methods=["GET"])
+@home.route("/moviecol/<int:page>", methods=["GET"])
 def moviecol(page=None):
     if page is None:
         page = 1
@@ -181,7 +185,8 @@ def moviecol(page=None):
         Moviecol.addtime.desc()
     ).paginate(page=page, per_page=10)
 
-    return render_template('home/moviecol.html',page_data=page_data)
+    return render_template('home/moviecol.html', page_data=page_data)
+
 
 @home.route("/animation/")
 def animation():
