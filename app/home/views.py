@@ -20,9 +20,63 @@ def change_filename(filename):
     return filename
 
 
-@home.route("/")
-def index():
-    return render_template('home/index.html')
+@home.route("/<int:page>/", methods=["GET"])
+@home.route("/", methods=["GET"])
+def index(page=None):
+    tags = Tag.query.all()
+    page_data = Movie.query
+    # 标签
+    tid = request.args.get("tid", 0)
+    if int(tid) != 0:
+        page_data = page_data.filter_by(tag_id=int(tid))
+    # 星级
+    star = request.args.get("star", 0)
+    if int(star) != 0:
+        page_data = page_data.filter_by(star=int(star))
+    # 时间
+    time = request.args.get("time", 0)
+    if int(time) != 0:
+        if int(time) == 1:
+            page_data = page_data.order_by(
+                Movie.addtime.desc()
+            )
+        else:
+            page_data = page_data.order_by(
+                Movie.addtime.asc()
+            )
+    # 播放量
+    pm = request.args.get("pm", 0)
+    if int(pm) != 0:
+        if int(pm) == 1:
+            page_data = page_data.order_by(
+                Movie.playnum.desc()
+            )
+        else:
+            page_data = page_data.order_by(
+                Movie.playnum.asc()
+            )
+    # 评论量
+    cm = request.args.get("cm", 0)
+    if int(cm) != 0:
+        if int(cm) == 1:
+            page_data = page_data.order_by(
+                Movie.commentnum.desc()
+            )
+        else:
+            page_data = page_data.order_by(
+                Movie.commentnum.asc()
+            )
+    if page is None:
+        page = 1
+    page_data = page_data.paginate(page=page, per_page=8)
+    p = dict(
+        tid=tid,
+        star=star,
+        time=time,
+        pm=pm,
+        cm=cm,
+    )
+    return render_template('home/index.html', p=p, page_data=page_data, tags=tags)
 
 
 @home.route("/login/", methods=["GET", "POST"])
@@ -170,6 +224,7 @@ def loginlog(page=None):
     return render_template('home/loginlog.html', page_data=page_data)
 
 
+# 收藏电影信息
 @home.route("/moviecol/<int:page>", methods=["GET"])
 def moviecol(page=None):
     if page is None:
@@ -188,6 +243,7 @@ def moviecol(page=None):
     return render_template('home/moviecol.html', page_data=page_data)
 
 
+# 轮播页
 @home.route("/animation/")
 def animation():
     data = Preview.query.all()
@@ -197,6 +253,7 @@ def animation():
     return render_template('home/animation.html', data=data)
 
 
+# 搜索
 @home.route("/search/<int:page>")
 def search(page=None):
     if page is None:
